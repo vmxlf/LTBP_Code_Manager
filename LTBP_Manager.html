@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LTBP 세이브 매니저</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-grad-1: #0f172a;
+            --bg-grad-2: #1e1b4b;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --success: #10b981;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-family: 'Pretendard', sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #c4b5fd, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .button-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.5s ease backwards;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .account-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 0.25rem;
+            color: #fff;
+        }
+
+        .clear-count {
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+        }
+
+        .code-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: #a78bfa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .copy-btn {
+            background: transparent;
+            box-shadow: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            color: var(--text-muted);
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .copy-btn.copied {
+            color: var(--success);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+            padding: 3rem;
+            background: var(--glass-bg);
+            border-radius: 16px;
+            border: 1px dashed var(--glass-border);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            width: 100%;
+            grid-column: 1 / -1;
+            padding: 2rem;
+            color: var(--accent);
+        }
+
+        .spinner {
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>LTBP Load Code Manager</h1>
+            <p class="subtitle">계정별 최고 클리어 횟수 로드코드를 쉽게 복사하세요</p>
+        </header>
+
+        <div class="controls">
+            <button id="selectDirBtn">
+                <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+                </svg>
+                LTBP 폴더 열기
+            </button>
+            <button id="refreshBtn" style="display: none; margin-left: 10px; background: var(--success); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                새로고침
+            </button>
+        </div>
+
+        <div class="grid" id="accountsGrid">
+            <div class="empty-state" id="emptyState">
+                폴더 열기 버튼을 눌러 워크래프트3의 LTBP 폴더를 선택해주세요.<br>
+                (일반적으로 문서\Warcraft III\CustomMapData\LTBP 에 위치합니다)
+            </div>
+            <div id="loading">
+                <div class="spinner"></div>
+                파일을 분석 중입니다...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const selectDirBtn = document.getElementById('selectDirBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const accountsGrid = document.getElementById('accountsGrid');
+        const emptyState = document.getElementById('emptyState');
+        const loading = document.getElementById('loading');
+
+        let currentDirHandle = null;
+
+        // Regex patterns to parse JASS Preload text
+        const nameRegex = /닉네임:\s*(.+?)"/;
+        const countRegex = /클리어 회수:\s*(\d+)회/;
+        const codeRegex = /-load\s+(.+?)"/;
+
+        // IndexedDB Helper for remembering folder path across F5
+        const dbName = 'LTBPManagerDB';
+        const storeName = 'handles';
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(storeName);
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveHandle(handle) {
+            const db = await initDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readwrite');
+                tx.objectStore(storeName).put(handle, 'dirHandle');
+                tx.oncomplete = resolve;
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function loadHandle() {
+            const db = await initDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const request = tx.objectStore(storeName).get('dirHandle');
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const handle = await loadHandle();
+                if (handle) {
+                    currentDirHandle = handle;
+                    refreshBtn.style.display = 'flex';
+                    
+                    const perm = await currentDirHandle.queryPermission({ mode: 'read' });
+                    if (perm === 'granted') {
+                        await loadFiles(currentDirHandle);
+                    } else {
+                        emptyState.innerHTML = `
+                            <div style="font-size: 1.1rem; margin-bottom: 1rem; color: #fff;">이전에 선택한 LTBP 폴더가 기억되어 있습니다.</div>
+                            브라우저 보안 정책상 파일 접근 권한 허용이 필요합니다.<br><br>
+                            <button id="quickLoadBtn" style="margin: 0 auto; background: var(--accent); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">
+                                <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                클릭하여 바로 불러오기
+                            </button>
+                        `;
+                        emptyState.style.display = 'block';
+                        
+                        document.getElementById('quickLoadBtn').addEventListener('click', async () => {
+                            try {
+                                if ((await currentDirHandle.requestPermission({ mode: 'read' })) === 'granted') {
+                                    await loadFiles(currentDirHandle);
+                                }
+                            } catch (err) {
+                                console.error(err);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load handle', e);
+            }
+        });
+
+        async function loadFiles(dirHandle) {
+            emptyState.style.display = 'none';
+            loading.style.display = 'block';
+            document.querySelectorAll('.card').forEach(el => el.remove());
+
+            const accounts = {};
+
+            try {
+                for await (const entry of dirHandle.values()) {
+                    if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.txt')) {
+                        const file = await entry.getFile();
+                        const text = await file.text();
+
+                        const nameMatch = text.match(nameRegex);
+                        const countMatch = text.match(countRegex);
+                        const codeMatch = text.match(codeRegex);
+
+                        if (nameMatch && countMatch && codeMatch) {
+                            const name = nameMatch[1].trim();
+                            const count = parseInt(countMatch[1].trim(), 10);
+                            const code = '-load ' + codeMatch[1].trim();
+
+                            if (!accounts[name] || accounts[name].count < count) {
+                                accounts[name] = { count, code, fileName: entry.name };
+                            }
+                        }
+                    }
+                }
+
+                loading.style.display = 'none';
+                renderAccounts(accounts);
+                refreshBtn.style.display = 'flex';
+                await saveHandle(dirHandle);
+
+            } catch (err) {
+                loading.style.display = 'none';
+                console.error(err);
+                alert('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+                if (!document.querySelector('.card')) {
+                    emptyState.style.display = 'block';
+                }
+            }
+        }
+
+        refreshBtn.addEventListener('click', async () => {
+            if (!currentDirHandle) return;
+            try {
+                // Request permission if not granted
+                if ((await currentDirHandle.queryPermission({ mode: 'read' })) !== 'granted') {
+                    const perm = await currentDirHandle.requestPermission({ mode: 'read' });
+                    if (perm !== 'granted') return;
+                }
+                await loadFiles(currentDirHandle);
+            } catch (err) {
+                console.error(err);
+                alert('폴더 권한을 얻는 데 실패했습니다.');
+            }
+        });
+
+        selectDirBtn.addEventListener('click', async () => {
+            try {
+                // Request directory handle
+                currentDirHandle = await window.showDirectoryPicker({
+                    id: 'ltbp_folder',
+                    mode: 'read',
+                    startIn: 'documents'
+                });
+                
+                await loadFiles(currentDirHandle);
+
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error(err);
+                    alert('폴더를 여는 중 오류가 발생했습니다: ' + err.message);
+                }
+            }
+        });
+
+        function renderAccounts(accounts) {
+            const accountNames = Object.keys(accounts).sort((a, b) => accounts[b].count - accounts[a].count);
+
+            if (accountNames.length === 0) {
+                emptyState.innerHTML = '해당 폴더에서 세이브 파일을 찾을 수 없습니다.<br>올바른 LTBP 폴더를 선택했는지 확인해주세요.';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            accountNames.forEach((name, index) => {
+                const data = accounts[name];
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.animationDelay = `${index * 0.1}s`;
+
+                card.innerHTML = `
+                    <div class="account-name">${name}</div>
+                    <div class="clear-count">클리어 ${data.count}회</div>
+                    <div class="code-container">
+                        <div class="code">${data.code}</div>
+                        <button class="copy-btn" title="복사하기" data-code="${data.code}">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+
+                accountsGrid.appendChild(card);
+            });
+
+            // Add copy event listeners
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const code = btn.getAttribute('data-code');
+                    try {
+                        await navigator.clipboard.writeText(code);
+                        
+                        // Show visual feedback
+                        const originalHtml = btn.innerHTML;
+                        btn.classList.add('copied');
+                        btn.innerHTML = `
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        `;
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHtml;
+                            btn.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy', err);
+                        alert('복사에 실패했습니다. 브라우저 권한을 확인해주세요.');
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
